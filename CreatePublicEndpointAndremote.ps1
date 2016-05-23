@@ -18,6 +18,10 @@ function Configure-AzureWinRMHTTPS {
   DNS name you will use to connect to the VM. If not provided defaults to the computer name.
   .PARAMETER SourceAddressPrefix
   Provide an CIDR value to restrict connections to a specific IP range
+  
+  Command to check the winRm Configuration 
+  winrm e winrm/config/listener  
+
   #>
  
    
