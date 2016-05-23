@@ -21,7 +21,8 @@ Add-WindowsFeature -Name Rsat-rds-tools,telnet-client
 
 } -ArgumentList $ServiceName # end of Script Block  
 
-
+# Command to check the winRm Configuration
+# winrm e winrm/config/listener 
 
 
 
