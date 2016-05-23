@@ -76,7 +76,7 @@ $ResourceGroupName = "rdsdeploybasic201"
 $vm = Get-AzureRmVM -ResourceGroupName $ResourceGroupName -Name $VMName
  
 # Get storage account name
-$storageaccountname = $vm.StorageProfile.OsDisk.Vhd.Uri.Split('.')[0].Replace('http://','')
+$storageaccountname = $vm.StorageProfile.OsDisk.Vhd.Uri.Split('.')[0].Replace('https://','')
   
 # get storage account key
 $key = (Get-AzureRmStorageAccountKey -Name $storageaccountname -ResourceGroupName $ResourceGroupName).Key1
