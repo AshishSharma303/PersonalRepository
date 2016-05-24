@@ -107,30 +107,31 @@ function NewRDSessionCollection($Broker, $SessionHost, $collectionName)
            {
                if ($RDS_RD_Server -contains $SessionHost)
                {
-                   Write-Output "Server: $($SessionHost) has already RDS-RD-Server Role Insalled"
+                   Write-Output "Server: $($SessionHost) has already RDS-RD-Server Role Insalled and might be added to a exisiting collection."
                }
                else
                {
                    Write-Output "Server has not RDS-RD-Server Role Insalled. `n executing Add-RdServer for $($SessionHost) `n"
                    $Add_RDSessionHost = Add-RDServer -Server $SessionHost -Role RDS-RD-SERVER -ConnectionBroker $Broker
-                   #Add-RDSessionHost -SessionHost $SessionHost -ConnectionBroker $Broker
                    If($Add_RDSessionHost)
                    {
                         #Check for existing collection exist
                         $CollectionCheck = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker
                         If($CollectionCheck)
                         {
-                            Write-Output "Collection $($collectionName) already exist in RDS deployment and will try to join $($SessionHost) the existing collection"
-                            $Set_RDSessionHost = Set-RDSessionHost -SessionHost $SessionHost -NewConnectionAllowed $True -ConnectionBroker $Broker
-                            If($Set_RDSessionHost)
-                            { Write-Output "Success: RD Session Host server added to a session collection successfully!! details below: `n Collection name : $($collectionName) `n Session Host: $($SessionHost) `n"  }
+                            Write-Output "`n Collection $($collectionName) already exist in RDS deployment and will try to join $($SessionHost) the existing collection"
+                            Set-RDSessionHost -SessionHost $SessionHost -NewConnectionAllowed Yes -ConnectionBroker $Broker -ErrorAction SilentlyContinue
+                            $Add_RDSessionHost = Add-RDSessionHost -SessionHost $SessionHost -ConnectionBroker $Broker -CollectionName $collectionName
+                            If($Add_RDSessionHost)
+                            { Write-Output "`n Success: RD Session Host server added to a session collection successfully!! ` 
+                              details below: `n Collection name : $($collectionName) `n Session Host: $($SessionHost) `n"  }
                         }
                         else
                         {
                             $NewCollection = New-RDSessionCollection -CollectionName $collectionName -CollectionDescription $collectionName -ConnectionBroker $Broker `
                             -SessionHost $SessionHost
                             If($NewCollection)
-                            { Write-Output "Success: collection was deployed successfully!! details below: `n Collection name : $($collectionName) `n Session Host: $($SessionHost) `n"  }
+                            { Write-Output " `n Success: collection was deployed successfully!! details below: `n Collection name : $($collectionName) `n Session Host: $($SessionHost) `n"  }
                         }
                         
                    }
@@ -141,7 +142,7 @@ function NewRDSessionCollection($Broker, $SessionHost, $collectionName)
            } #end of try
            catch [System.Exception]
            {
-               Write-Output "adding $($SessionHost) had an error: `n $Error[0] "
+               Write-Output " `n adding $($SessionHost) had an error: `n $Error[0] "
            }
 
 
@@ -150,7 +151,7 @@ function NewRDSessionCollection($Broker, $SessionHost, $collectionName)
     } #End of If $RDS_CONNECTION_BROKER -contains $Broker
     else
     {
-        Write-Output "$($Broker), is not mentioned in the list of current RDS deployment.."
+        Write-Output "`n $($Broker), is not mentioned in the list of current RDS deployment.."
     }
 }
 
