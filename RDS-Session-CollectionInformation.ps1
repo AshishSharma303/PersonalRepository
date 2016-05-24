@@ -1,5 +1,13 @@
 ﻿[String]$Broker = "Broker.Mydomain.local"
 
+# checking if the RDS tools are already installed on local Machine.
+$localMachine = $env:COMPUTERNAME
+$RDSToolCheck = Get-WindowsFeature -Name "RSAT-RDS-Tools" -ComputerName $localMachine
+if ($RDSToolCheck.InstallState -ne "Installed")
+{
+        Install-WindowsFeature RSAT-RDS-Gateway,RSAT-RDS-Tools,RDS-Licensing-UI,RSAT-RDS-Licensing-Diagnosis-UI -Verbose
+}
+else{ Write-Output "Tools are already installed on localMachine $($localMachine)" }
 
 $getRdServer = Get-RDServer -ConnectionBroker $Broker
 
@@ -81,6 +89,72 @@ if ($getRdsSessionCollection)
 }
 
 
+# Adds one or more RD Session Host servers to a session collection 
+function NewRDSessionCollection($Broker, $SessionHost, $collectionName)
+{
+    #$Broker = "broker.mydomain.local"
+    #$SessionHost = "RDSH-0.mydomain.local"
+    #$collectionName = "RemoteDesktopCollection02"
+    if ($RDS_CONNECTION_BROKER -contains $Broker)
+    {
+       if (($SessionHost -eq $null) -and ($collectionName -eq $null))
+       {
+           Write-Output "Session Host information is blank or not valid."
+       }
+       else
+       {
+           try
+           {
+               if ($RDS_RD_Server -contains $SessionHost)
+               {
+                   Write-Output "Server: $($SessionHost) has already RDS-RD-Server Role Insalled"
+               }
+               else
+               {
+                   Write-Output "Server has not RDS-RD-Server Role Insalled. `n executing Add-RdServer for $($SessionHost) `n"
+                   $Add_RDSessionHost = Add-RDServer -Server $SessionHost -Role RDS-RD-SERVER -ConnectionBroker $Broker
+                   #Add-RDSessionHost -SessionHost $SessionHost -ConnectionBroker $Broker
+                   If($Add_RDSessionHost)
+                   {
+                        #Check for existing collection exist
+                        $CollectionCheck = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker
+                        If($CollectionCheck)
+                        {
+                            Write-Output "Collection $($collectionName) already exist in RDS deployment and will try to join $($SessionHost) the existing collection"
+                            $Set_RDSessionHost = Set-RDSessionHost -SessionHost $SessionHost -NewConnectionAllowed $True -ConnectionBroker $Broker
+                            If($Set_RDSessionHost)
+                            { Write-Output "Success: RD Session Host server added to a session collection successfully!! details below: `n Collection name : $($collectionName) `n Session Host: $($SessionHost) `n"  }
+                        }
+                        else
+                        {
+                            $NewCollection = New-RDSessionCollection -CollectionName $collectionName -CollectionDescription $collectionName -ConnectionBroker $Broker `
+                            -SessionHost $SessionHost
+                            If($NewCollection)
+                            { Write-Output "Success: collection was deployed successfully!! details below: `n Collection name : $($collectionName) `n Session Host: $($SessionHost) `n"  }
+                        }
+                        
+                   }
+               
+               }
+               
+               
+           } #end of try
+           catch [System.Exception]
+           {
+               Write-Output "adding $($SessionHost) had an error: `n $Error[0] "
+           }
+
+
+
+       }
+    } #End of If $RDS_CONNECTION_BROKER -contains $Broker
+    else
+    {
+        Write-Output "$($Broker), is not mentioned in the list of current RDS deployment.."
+    }
+}
+
+NewRDSessionCollection -Broker "broker.mydomain.local" -SessionHost "RDSH-0.mydomain.local" -collectionName "RemoteDesktopCollection02"
 
 
              
