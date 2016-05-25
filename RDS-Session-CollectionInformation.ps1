@@ -1,4 +1,5 @@
-﻿[String]$Broker = "Broker.Mydomain.local"
+﻿
+[String]$Broker = "Broker.Mydomain.local"
 
 # checking if the RDS tools are already installed on local Machine.
 $localMachine = $env:COMPUTERNAME
@@ -9,7 +10,11 @@ if ($RDSToolCheck.InstallState -ne "Installed")
 }
 else{ Write-Output "Tools are already installed on localMachine $($localMachine)" }
 
+$getRDSModudle = Get-Module -Name RemoteDesktop -ErrorAction SilentlyContinue
+If($getRDSModudle){Write-Output "Remotedesktop Module is present on local Machine $($localMachine) `n"}Else{ Import-Module RemoteDesktop -ErrorAction SilentlyContinue }
+
 $getRdServer = Get-RDServer -ConnectionBroker $Broker
+If($getRdServer) {}else{Write-Output "The Remote Desktop Management service is not running on the RD Connection Broker server `n you might not provided the correct Broker server input or local machine has not the RDS tools configured." }
 
 function RoleCheck ($RoleValue)
 {
@@ -94,7 +99,7 @@ function NewRDSessionCollection($Broker, $SessionHost, $collectionName)
 {
     #$Broker = "broker.mydomain.local"
     #$SessionHost = "RDSH-0.mydomain.local"
-    #$collectionName = "RemoteDesktopCollection02"
+    #$collectionName = "RemoteDesktopCollection03"
     if ($RDS_CONNECTION_BROKER -contains $Broker)
     {
        if (($SessionHost -eq $null) -and ($collectionName -eq $null))
@@ -155,10 +160,64 @@ function NewRDSessionCollection($Broker, $SessionHost, $collectionName)
     }
 }
 
-NewRDSessionCollection -Broker "broker.mydomain.local" -SessionHost "RDSH-0.mydomain.local" -collectionName "RemoteDesktopCollection02"
+# NewRDSessionCollection -Broker "broker.mydomain.local" -SessionHost "RDSH-0.mydomain.local" -collectionName "RemoteDesktopCollection03"
 
 
-             
+
+function RemoveCollection
+{
+
+Param
+(
+[Parameter(Mandatory = $true)]
+[ValidateNotNullOrEmpty()]
+[String]$broker,
+[Parameter(Mandatory = $true)]
+[ValidateNotNullOrEmpty()]
+[String]$collectionName,
+[Parameter(Mandatory = $true)]
+[ValidateSet("remove")]
+[String]$Action
+
+)    
+     if ($RDS_CONNECTION_BROKER -contains $Broker)
+     {
+        Write-Output "`n $($Broker), Broker name provided is valid."
+        $CollectionCheck = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker
+        If($CollectionCheck)
+        {
+             Write-Output "`n $($collectionName), Collection name provided is valid."
+             <# If($Action -eq "add")
+             {
+                $NewCollection = New-RDSessionCollection -CollectionName $collectionName -CollectionDescription $collectionName -ConnectionBroker $Broker -Verbose -ErrorAction Stop
+                If($NewCollection)
+                { Write-Output " `n Success: collection was deployed successfully!! details below: `n Collection name : $($collectionName) `n"  }
+             }
+             #>
+             If($Action -eq "remove")
+             {
+                $collectionName = "DesktopCollection01"
+                $broker = "Broker.mydomain.local"
+                Remove-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker -Force
+                $GetCollection = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker -ErrorAction SilentlyContinue
+                If(!$GetCollection)
+                    {Write-Output " `n Success: collection was removed successfully!! details below: `n Collection name : $($collectionName) `n"}
+             }
+        }
+        Else
+        {
+           Write-Output "`n Not able to find the Collection $($collectionName)" 
+        }
+     }
+     else
+     {
+        Write-Output "`n $($Broker), is not mentioned in the list of current RDS deployment.."
+     }
+      
+}
+
+ RemoveCollection -Broker "broker.mydomain.local" -collectionName "DesktopCollection01" -Action remove
+          
 
 
 
