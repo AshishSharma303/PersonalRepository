@@ -95,7 +95,7 @@ if ($getRdsSessionCollection)
 
 
 # Adds one or more RD Session Host servers to a session collection 
-function NewRDSessionCollection($Broker, $SessionHost, $collectionName)
+function RdsNewRDSessionCollection($Broker, $SessionHost, $collectionName)
 {
     #$Broker = "broker.mydomain.local"
     #$SessionHost = "RDSH-0.mydomain.local"
@@ -164,7 +164,7 @@ function NewRDSessionCollection($Broker, $SessionHost, $collectionName)
 
 
 
-function RemoveCollection
+function RdsRemoveCollection
 {
 
 Param
@@ -196,8 +196,8 @@ Param
              #>
              If($Action -eq "remove")
              {
-                $collectionName = "DesktopCollection01"
-                $broker = "Broker.mydomain.local"
+                # $collectionName = "DesktopCollection01"
+                # $broker = "Broker.mydomain.local"
                 Remove-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker -Force
                 $GetCollection = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker -ErrorAction SilentlyContinue
                 If(!$GetCollection)
@@ -219,7 +219,72 @@ Param
  RemoveCollection -Broker "broker.mydomain.local" -collectionName "DesktopCollection01" -Action remove
           
 
+function RdsUserGroup
+{
+Param
+(
+[Parameter(Mandatory = $true)]
+[ValidateNotNullOrEmpty()]
+[String]$broker,
+[Parameter(Mandatory = $true)]
+[ValidateNotNullOrEmpty()]
+[String]$collectionName,
+[Parameter(Mandatory = $true)]
+[ValidateSet("add","remove")]
+[String]$Action,
+[Parameter(Mandatory = $true)]
+[ValidateSet("add","remove")]
+[String]$UserGroup
 
+)      
+    if ($RDS_CONNECTION_BROKER -contains $Broker)
+     {
+        Write-Output "`n $($Broker), Broker name provided is valid."
+        $CollectionCheck = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker
+        If($CollectionCheck)
+        {
+             Write-Output "`n $($collectionName), Collection name provided is valid."
+             
+             If($Action -eq "add")
+             {
+                # $collectionName = "DesktopCollection01"
+                # $broker = "Broker.mydomain.local"
+                # $userGroup = "Mydomain\Domain users"
+                $GetUserGroup = Get-RDSessionCollectionConfiguration -CollectionName $collectionName -UserGroup -ConnectionBroker $broker -ErrorAction SilentlyContinue
+                $UserGroupArray = New-Object System.Collections.ArrayList
+                $UserGroupArray.Add($GetUserGroup.UserGroup) | Out-Null
+                $UserGroupArray.Add($UserGroup) | Out-Null
+                try
+                {
+                    $setRDSessionCollectionConfiguration = Set-RDSessionCollectionConfiguration -CollectionName $collectionName -ConnectionBroker $broker -UserGroup $UserGroupArray -ErrorAction Stop
+                    $GetUserGroup = Get-RDSessionCollectionConfiguration -CollectionName $collectionName -UserGroup -ConnectionBroker $broker -ErrorAction SilentlyContinue
+                    If($GetUserGroup.UserGroup -contains $UserGroup)
+                    {Write-Output "Success : $($UserGroup) got successfully added to Usergroup property of collecion $($collectionName), details below: `n UserGroup: $($UserGroup) `n Collection name: $($collectionName)"}
+                
+                }
+                catch [System.Exception]
+                {
+                    Write-Output "`n Error: while adding a Usergroup $($UserGroup) for collection $($collectionName) `n $Error[0]"
+                }
+
+                
+
+                $GetCollection = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker -ErrorAction SilentlyContinue
+                If(!$GetCollection)
+                    {Write-Output " `n Success: collection was removed successfully!! details below: `n Collection name : $($collectionName) `n"}
+             }
+        }
+        Else
+        {
+           Write-Output "`n Not able to find the Collection $($collectionName) in current deployment." 
+        }
+     }
+     else
+     {
+        Write-Output "`n $($Broker), Broker server is not mentioned in the list of current RDS deployment.."
+     }
+
+}
 
 
 
