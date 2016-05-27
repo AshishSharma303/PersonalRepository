@@ -233,10 +233,10 @@ Param
 [ValidateSet("add","remove")]
 [String]$Action,
 [Parameter(Mandatory = $true)]
-[ValidateSet("add","remove")]
 [String]$UserGroup
 
 )      
+    $Error.Clear()
     if ($RDS_CONNECTION_BROKER -contains $Broker)
      {
         Write-Output "`n $($Broker), Broker name provided is valid."
@@ -267,13 +267,7 @@ Param
                     Write-Output "`n Error: while adding a Usergroup $($UserGroup) for collection $($collectionName) `n $Error[0]"
                 }
 
-                
-
-                $GetCollection = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker -ErrorAction SilentlyContinue
-                If(!$GetCollection)
-                    {Write-Output " `n Success: collection was removed successfully!! details below: `n Collection name : $($collectionName) `n"}
-             }
-        }
+        } # end of If ($Action -eq Add)
         Else
         {
            Write-Output "`n Not able to find the Collection $($collectionName) in current deployment." 
@@ -287,7 +281,7 @@ Param
 }
 
 
-
+RdsUserGroup -broker "broker.mydomain.local" -collectionName "desktopcollection01" -Action add -UserGroup "Mydomain\Rds-Group"
 
 
 
