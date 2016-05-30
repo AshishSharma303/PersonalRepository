@@ -11,7 +11,7 @@ Enable-WSManCredSSP -Role Client -DelegateComputer * -Force
 $Cred = New-Object System.Management.Automation.PSCredential -ArgumentList @($username,(ConvertTo-SecureString -String $password -AsPlainText -Force))
 
 $vmsessionOption = New-PSSessionOption -SkipCACheck -SkipCNCheck
-$Session01 = new-PSSession -ComputerName "138.91.248.126" -Credential $Cred -UseSSL -SessionOption $vmsessionOption -Authentication Credssp
+$Session01 = new-PSSession -ComputerName "13.91.42.181" -Credential $Cred -UseSSL -SessionOption $vmsessionOption -Authentication Credssp
 
 
 Invoke-Command -Session $Session01 -ScriptBlock { param($Broker)
@@ -113,7 +113,8 @@ if ($getRdsSessionCollection)
         $CollectionArray.Add($CollectionGroup) | Out-Null
     }
 
-$CollectionArray | Out-GridView
+Write-Output "Following information has been extracted from the system regarding RDS collections..."
+Write-Output $CollectionArray
 } # end of RDS collection code.
 
 
