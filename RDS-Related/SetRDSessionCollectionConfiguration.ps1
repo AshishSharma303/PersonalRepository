@@ -1,5 +1,75 @@
 
-[String]$Broker = "Broker.Mydomain.local"
+<#
+.SYNOPSIS
+  Connects to Azure RDS setup and collectes information of RDS Collections in the specified Azure subscription or resource group
+
+.DESCRIPTION
+  This runbook connects to Azure and collectes information of RDS Collections in the specified Azure subscription or resource group.  
+  Parameters to be filled to set settings for the RDS collection configurations.
+.Optional  
+  You can attach a schedule to this runbook to run it at a specific time. 
+.Parameters
+    broker,
+    collectionName,
+    DisableUserProfileDisk ="False",
+    MaxUserProfileDiskSizeGB,
+    DiskPath,
+    DisconnectedSessionLimitMin = 0,
+    ActiveSessionLimitMin = 0,
+    IdleSessionLimitMin = 0,
+    AutomaticReconnectionEnabled = "False",
+    BrokenConnectionAction = "None",
+    Action
+   
+.NOTES
+   AUTHOR: CSP Team, Ashish Sharma 
+   LASTEDIT: May 30, 2016
+#>
+
+Param
+(
+[Parameter(Mandatory = $true)]
+[ValidateNotNullOrEmpty()]
+[String]$broker = "Broker.mydomain.local",
+[Parameter(Mandatory = $true)]
+[ValidateNotNullOrEmpty()]
+[String]$collectionName = "Desktop Collection",
+[Parameter(Mandatory = $False)]
+[ValidateNotNullOrEmpty()]
+[ValidateSet("True","False")]
+[String]$DisableUserProfileDisk ="False",
+[Parameter(Mandatory = $False)]
+[ValidateNotNullOrEmpty()]
+[int]$MaxUserProfileDiskSizeGB,
+[Parameter(Mandatory = $False)]
+[ValidateNotNullOrEmpty()]
+[String]$DiskPath,
+[Parameter(Mandatory = $False)]
+[ValidateNotNullOrEmpty()]
+[Int]$DisconnectedSessionLimitMin = 0,
+[Parameter(Mandatory = $False)]
+[ValidateNotNullOrEmpty()]
+[Int]$ActiveSessionLimitMin = 0,
+[Parameter(Mandatory = $False)]
+[ValidateNotNullOrEmpty()]
+[Int]$IdleSessionLimitMin = 0,
+[Parameter(Mandatory = $False)]
+[ValidateSet("True", "False")]
+[String]$AutomaticReconnectionEnabled = "False",
+[Parameter(Mandatory = $False)]
+[ValidateSet("None","Disconnect","LogOff")]
+[String]$BrokenConnectionAction = "None",
+[Parameter(Mandatory = $True)]
+[String]$Password = "Password@12345",
+[Parameter(Mandatory = $True)]
+[String]$Username = "Mydomain\azureuser",
+
+
+[Parameter(Mandatory = $False)]
+[ValidateSet("remove")]
+[String]$Action
+
+) # Param section close.  
 
 # checking if the RDS tools are already installed on local Machine.
 $localMachine = $env:COMPUTERNAME
@@ -9,6 +79,34 @@ if ($RDSToolCheck.InstallState -ne "Installed")
         Install-WindowsFeature RSAT-RDS-Gateway,RSAT-RDS-Tools,RDS-Licensing-UI,RSAT-RDS-Licensing-Diagnosis-UI -Verbose
 }
 else{ Write-Output "Tools are already installed on localMachine $($localMachine)" }
+
+$getRDSModudle = Get-Module -Name RemoteDesktop -ErrorAction SilentlyContinue
+If($getRDSModudle){Write-Output "Remotedesktop Module is present on local Machine $($localMachine) `n"}Else{ Import-Module RemoteDesktop -ErrorAction SilentlyContinue }
+
+# Building PSS Session
+$Cred = New-Object System.Management.Automation.PSCredential -ArgumentList @($username,(ConvertTo-SecureString -String $password -AsPlainText -Force))
+$vmsessionOption = New-PSSessionOption -SkipCACheck -SkipCNCheck
+$Session01 = new-PSSession -ComputerName $localMachine -Credential $Cred -UseSSL -SessionOption $vmsessionOption -Authentication Credssp
+
+
+
+# Invoke module section Starts
+
+Invoke-Command -Session $Session01 -ScriptBlock {
+Param
+(
+[String]$broker,
+[String]$collectionName,
+[String]$DisableUserProfileDisk,
+[int]$MaxUserProfileDiskSizeGB,
+[String]$DiskPath,
+[Int]$DisconnectedSessionLimitMin,
+[Int]$ActiveSessionLimitMin,
+[Int]$IdleSessionLimitMin,
+[String]$AutomaticReconnectionEnabled,
+[String]$BrokenConnectionAction,
+[String]$Action
+) # Param section close.  
 
 $getRDSModudle = Get-Module -Name RemoteDesktop -ErrorAction SilentlyContinue
 If($getRDSModudle){Write-Output "Remotedesktop Module is present on local Machine $($localMachine) `n"}Else{ Import-Module RemoteDesktop -ErrorAction SilentlyContinue }
@@ -92,53 +190,10 @@ if ($getRdsSessionCollection)
         $CollectionArray.Add($CollectionGroup) | Out-Null
     }
 }
+# Collection Array Finish.
 
 
-
-function SetRDSessionCollectionConfiguration
-{
-Param
-(
-[Parameter(Mandatory = $true)]
-[ValidateNotNullOrEmpty()]
-[String]$broker,
-[Parameter(Mandatory = $true)]
-[ValidateNotNullOrEmpty()]
-[String]$collectionName,
-[Parameter(Mandatory = $False)]
-[ValidateNotNullOrEmpty()]
-[ValidateSet("True","False")]
-[String]$DisableUserProfileDisk ="False",
-[Parameter(Mandatory = $False)]
-[ValidateNotNullOrEmpty()]
-[int]$MaxUserProfileDiskSizeGB,
-[Parameter(Mandatory = $False)]
-[ValidateNotNullOrEmpty()]
-[Int]$DiskPath,
-[Parameter(Mandatory = $False)]
-[ValidateNotNullOrEmpty()]
-[Int]$DisconnectedSessionLimitMin = 0,
-[Parameter(Mandatory = $False)]
-[ValidateNotNullOrEmpty()]
-[Int]$ActiveSessionLimitMin = 0,
-[Parameter(Mandatory = $False)]
-[ValidateNotNullOrEmpty()]
-[Int]$IdleSessionLimitMin = 0,
-[Parameter(Mandatory = $False)]
-[ValidateSet("True", "False")]
-[String]$AutomaticReconnectionEnabled = "False",
-[Parameter(Mandatory = $False)]
-[ValidateSet("None","Disconnect","LogOff")]
-[String]$BrokenConnectionAction = "None",
-
- 
-[Parameter(Mandatory = $False)]
-[ValidateSet("remove")]
-[String]$Action
-
-) # Param section close.   
-
-     if ($RDS_CONNECTION_BROKER -contains $Broker)
+if ($RDS_CONNECTION_BROKER -contains $Broker)
      {
         Write-Output "`n $($Broker), Broker name provided is valid."
         $CollectionCheck = Get-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $Broker
@@ -177,7 +232,8 @@ Param
                
            }
            #  DisableUserProfileDisk or EnableUserProfileDisk ends here
-           if (($DisconnectedSessionLimitMin -gt 0) -or ($ActiveSessionLimitMin -gt 0) -or ($IdleSessionLimitMin -gt 0))
+           
+		   if (($DisconnectedSessionLimitMin -gt 0) -or ($ActiveSessionLimitMin -gt 0) -or ($IdleSessionLimitMin -gt 0))
            {
                 Try
                 {
@@ -225,9 +281,7 @@ Param
            }
            # End for setting BrokenConnectionAction for collection 
            
-        
-        
-        
+       
         
         
         } # If End for CollectionCheck true
@@ -243,9 +297,9 @@ Param
 
 
 
-    
-}
+} -ArgumentList $Broker,$collectionName,$DisableUserProfileDisk,$MaxUserProfileDiskSizeGB,$DiskPath,$DisconnectedSessionLimitMin,$ActiveSessionLimitMin,$IdleSessionLimitMin,$AutomaticReconnectionEnabled,$BrokenConnectionAction,$Action
+# Invoke module section Ends here
 
 
-# SetRDSessionCollectionConfiguration -broker "broker.mydomain.local" -collectionName "Desktop Collection" -DisableUserProfileDisk True -DisconnectedSessionLimitMin 15 -ActiveSessionLimitMin 15 -IdleSessionLimitMin 15 -AutomaticReconnectionEnabled True -BrokenConnectionAction Disconnect
+Get-PSSession | Remove-PSSession -Verbose
 
