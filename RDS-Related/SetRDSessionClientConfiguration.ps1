@@ -4,7 +4,7 @@
   Connects to Azure RDS setup and collectes information of RDS Collections in the specified Azure subscription or resource group
 
 .DESCRIPTION
-  This runbook connects to Azure and collectes information of RDS Collections in the specified Azure subscription or resource group.  
+  This runbook connects to Azure and collects information of RDS Collections in the specified Azure subscription or resource group.  
   Parameters to be filled to set settings for the RDS client side configurations.
 .Optional  
   You can attach a schedule to this runbook to run it at a specific time. 
@@ -282,7 +282,7 @@ if ($RDS_CONNECTION_BROKER -contains $Broker)
                     }
                     if ($ClientPrinterAsDefault -eq "False")
                     {
-                        Set-RDSessionCollectionConfiguration -CollectionName $collectionName -ConnectionBroker $broker -ClientPrinterAsDefault $False -ErrorAction Continue
+                        Set-RDSessionCollectionConfiguration -CollectionName $collectionName -ConnectionBroker $broker -ClientPrinterAsDefault $False -ClientPrinterRedirected $False -RDEasyPrintDriverEnabled $False -ErrorAction Continue
                     }
 
                     Write-Output "`n setting ClientPrinterRedirected updated sucessfully to None, details below: "
