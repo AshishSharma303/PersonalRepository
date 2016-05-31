@@ -11,7 +11,7 @@ Enable-WSManCredSSP -Role Client -DelegateComputer * -Force
 $Cred = New-Object System.Management.Automation.PSCredential -ArgumentList @($username,(ConvertTo-SecureString -String $password -AsPlainText -Force))
 
 $vmsessionOption = New-PSSessionOption -SkipCACheck -SkipCNCheck
-$Session01 = new-PSSession -ComputerName "13.91.42.181" -Credential $Cred -UseSSL -SessionOption $vmsessionOption -Authentication Credssp
+$Session01 = new-PSSession -ComputerName "40.78.111.154" -Credential $Cred -UseSSL -SessionOption $vmsessionOption -Authentication Credssp
 
 
 Invoke-Command -Session $Session01 -ScriptBlock { param($Broker)
