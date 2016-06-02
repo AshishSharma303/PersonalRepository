@@ -15,9 +15,9 @@ workflow Start-VM
         [String] $username = "ashishsharma303@hotmail.com"
         
     )
-
-# $Cred = New-Object System.Management.Automation.PSCredential -ArgumentList @($username,(ConvertTo-SecureString -String $password -AsPlainText -Force))
-    add-AzureRmAccount
+    #$Password = "ushiashiUSA"
+    #$Cred = New-Object System.Management.Automation.PSCredential -ArgumentList @($UserName,(ConvertTo-SecureString -String $password -AsPlainText -Force))
+    add-AzureRmAccount -SubscriptionId e3d5a715-fd29-4509-9dac-5ca7f49fb1a0
     Select-AzureRmSubscription -SubscriptionId e3d5a715-fd29-4509-9dac-5ca7f49fb1a0 -TenantId 72f988bf-86f1-41af-91ab-2d7cd011db47
 
 
@@ -36,7 +36,7 @@ $getResourceGroup = Get-AzureRmResourceGroup -Name $ResourceGroupName
                 Select-AzureRmSubscription -SubscriptionId e3d5a715-fd29-4509-9dac-5ca7f49fb1a0
                 Write-Output $($using:item.Name)
                 Write-Output $using:ResourceGroupName
-                Start-AzureRmVM -Name $($using:item.Name) -ResourceGroupName $using:ResourceGroupName
+                Restart-AzureRmVM -Name $($using:item.Name) -ResourceGroupName $using:ResourceGroupName
             } # Optional workflow common parameters such as -PSComputerName and -PSCredential
             
             
