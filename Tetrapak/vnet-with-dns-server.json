@@ -1,0 +1,88 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "metadata": {
+                "Description": "The region to deploy the resources into"
+            }
+        },
+        "virtualNetworkName": {
+            "type": "string",
+            "metadata": {
+                "Description": "The name of the Virtual Network to Create"
+            }
+        },
+        "DNSServerAddress": {
+            "type": "array",
+            "metadata": {
+                "Description": "The DNS address(es) of the DNS Server(s) used by the VNET"
+            }
+        }
+    },
+    "variables": {
+        "adVMPrefix": "dc",
+        "addressPrefix": "192.168.4.4/22",
+        "storageAccountType": "Standard_LRS",
+        "domaincontrollersubnet": "domain-controllers",
+        "domaincontrollersubnetPrefix": "192.168.4.0/27",
+        "webserversubnet": "web-serves",
+        "webserversubnetPrefix": "192.168.4.32/27",
+        "databaseserversubnet": "database-serves",
+        "databaseserversubnetPrefix": "192.168.4.64/27",
+        "applicationserversubnet": "application-serves",
+        "applicationserversubnetPrefix": "192.168.4.96/27",
+        "adPDCNicIPAddress": "192.168.4.4",
+        "SadPDCNicIPAddress": "192.168.4.5",
+    },
+	"resources": [
+		{
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[parameters('virtualNetworkName')]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "displayName": "VirtualNetwork"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "dhcpOptions": {
+                    "dnsServers": "[parameters('DNSServerAddress')]"
+                },
+
+                "subnets": [
+                    {
+                        "name": "[variables('domaincontrollersubnet')]",
+                        "properties": {
+                            "addressPrefix": "[variables('domaincontrollersubnetPrefix')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('webserversubnet')]",
+                        "properties": {
+                            "addressPrefix": "[variables('webserversubnetPrefix')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('databaseserversubnet')]",
+                        "properties": {
+                            "addressPrefix": "[variables('databaseserversubnetPrefix')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('applicationserversubnet')]",
+                        "properties": {
+                            "addressPrefix": "[variables('applicationserversubnetPrefix')]"
+                        }
+                    }
+
+                ]
+            }
+        }
+	]
+}
