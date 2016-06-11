@@ -1,0 +1,52 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminPassword": {
+      "value": "Password@12345"
+    },
+    "storageAccountNameAD": {
+      "value": "storagetp01std"
+    },
+    "storageAccountNameSQL": {
+      "value": "storagetp01prm"
+    },
+    "storageAccountNameDataload": {
+      "value": "storagetp01datastd"
+    },
+    "adminUsername": {
+      "value": "azureUser"
+    },
+    "adDomainName": {
+      "value": "tetrapak.com"
+    },
+    "ADServerName": {
+      "value": "tpadvm01"
+    },
+    "SQLSSISServerName": {
+      "value": "tpsqlssisvm01"
+    },
+    "SQLSSASServerName": {
+      "value": "tpsqlssasvm01"
+    },
+    "VnetName": {
+      "value": "TetrapakVnet"
+    },
+    "AdminDomainJoin": { "value": "tetrapak\\azureUser" },
+    "SQLDBServerName": { "value": "tpsqldbserver" },
+    "TpDbSqluUsername": { "value": "tpdbSQLuser" },
+    "sqluserPassword": { "value": "Password@12345" },
+    "SQLdatabaseName": { "value": "tpdbsqldb" },
+    "edition": { "value": "standard" },
+    "collation": { "value": "SQL_Latin1_General_CP1_CI_AS" },
+    "maxSizeBytes": { "value": "10737418240" },
+    "requestedServiceObjectiveName": {"value": "S3"},
+
+    "DWHDBServerName": { "value": "tpdwhdbserver"},
+    "DWHdatabaseName": { "value": "tpdbdwhdb"},
+    "DWHedition": { "value": "DataWarehouse"},
+    "DWHcollation": { "value": "SQL_Latin1_General_CP1_CI_AS" },
+    "DWHmaxSizeBytes": { "value": "10995116277760" },
+    "DWHrequestedServiceObjectiveName": { "value": "DW100" }
+  }
+}

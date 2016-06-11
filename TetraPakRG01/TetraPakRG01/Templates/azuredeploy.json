@@ -1,0 +1,1014 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adDomainName": {
+      "type": "string",
+      "metadata": {
+        "description": "The FQDN of the AD domain. For example contoso.com"
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the administrator of the new VM and the domain. Exclusion list: 'administrator'. For example johnadmin"
+      }
+    },
+    "adminDomainJoin": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the administrator of the new VM and the domain. Exclusion list: 'administrator'. For example johnadmin"
+      }
+    },
+    "storageAccountNameAD": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the administrator of the new VM and the domain. Exclusion list: 'administrator'. For example johnadmin"
+      }
+    },
+    "storageAccountNameSQL": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the administrator of the new VM and the domain. Exclusion list: 'administrator'. For example johnadmin"
+      }
+    },
+    "storageAccountNameDataload": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the administrator of the new VM and the domain. Exclusion list: 'administrator'. For example johnadmin"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password for the administrator account of the new VM and the domain"
+      }
+    },
+    "ADServerName": {
+      "type": "string",
+      "metadata": {
+        "description": "The password for the administrator account of the new VM and the domain"
+      }
+    },
+    "SQLSSISServerName": {
+      "type": "string",
+      "metadata": {
+        "description": "The password for the administrator account of the new VM and the domain"
+      }
+    },
+    "SQLSSASServerName": {
+      "type": "string",
+      "metadata": {
+        "description": "The password for the administrator account of the new VM and the domain"
+      }
+    },
+    "VnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The password for the administrator account of the new VM and the domain"
+      }
+    },
+    "OuPath": {
+      "type": "string",
+      "defaultValue": "OU=servers,DC=tetrapak,DC=com",
+      "metadata": {
+        "description": "The password for the administrator account of the new VM and the domain"
+      }
+    },
+    "domainJoinOptions": {
+      "type": "int",
+      "defaultValue": 3,
+      "metadata": {
+        "description": "Set of bit flags that define the join options. Default value of 3 is a combination of NETSETUP_JOIN_DOMAIN (0x00000001) & NETSETUP_ACCT_CREATE (0x00000002) i.e. will join the domain and create the account on the domain. For more information see https://msdn.microsoft.com/en-us/library/aa392154(v=vs.85).aspx"
+      }
+    },
+    "SQLDBServerName": {
+      "type": "string",
+      "metadata": {
+        "description": "PAAS SQL DB server Name"
+      }
+    },
+    "imageSKU": {
+      "type": "string",
+      "allowedValues": [
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ],
+      "metadata": {
+        "description": "Windows server SKU"
+      },
+      "defaultValue": "2012-R2-Datacenter"
+    },
+    "TpDbSqluUsername": { "type": "string" },
+    "sqluserPassword": { "type": "securestring" },
+    "SQLdatabaseName": { "type": "string" },
+    "edition": { "type": "string" },
+    "collation": { "type": "string" },
+    "maxSizeBytes": { "type": "string" },
+    "requestedServiceObjectiveName": {
+      "type": "string",
+      "defaultValue": "S3",
+      "allowedValues": [
+        "S0",
+        "S1",
+        "S2",
+        "S3"
+      ]
+    },
+    "DWHDBServerName": { "type": "string" },
+    "DWHdatabaseName": { "type": "string" },
+    "DWHedition": { "type": "string" },
+    "DWHcollation": { "type": "string" },
+    "DWHmaxSizeBytes": { "type": "string" },
+    "DWHrequestedServiceObjectiveName": {
+      "type": "string",
+      "defaultValue": "DW100"
+    }
+
+
+  },
+  "variables": {
+    "ADLoadBalancerName": "[concat(parameters('ADServerName'),'-LB')]",
+    "apiVersion": "2015-06-15",
+    "assetLocation": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/rds-deployment/",
+    "dnsServerPrivateIp": "10.0.0.8",
+    "imageOffer": "WindowsServer",
+    "imagePublisher": "MicrosoftWindowsServer",
+    "publicIpRefAD": "publicIpad",
+    "publicIpRefSQLSSAS": "publicIpsqlssas",
+    "publicIpRefSQLSSIS": "publicIpsqlssis",
+    "sqlImageOffer": "SQL2016-WS2012R2",
+    "sqlImagePublisher": "MicrosoftSQLServer",
+    "sqlImageSKU": "Standard",
+    "SQLSSASLoadBalancerName": "[concat(parameters('SQLSSASServerName'),'-LB')]",
+    "SQLSSISLoadBalancerName": "[concat(parameters('SQLSSISServerName'),'-LB')]",
+    "SSASServerPrivateIp": "10.0.0.10",
+    "SSISServerPrivateIp": "10.0.0.9",
+    "subnetAddressRange": "10.0.0.0/24",
+    "subnet-id": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('VnetName')),'/subnets/',variables('subnetName'))]",
+    "subnetName": "Subnet",
+    "UpdateVNETTemplateFileURI": "https://raw.githubusercontent.com/AshishSharma303/PersonalRepository/master/Tetrapak/vnet-with-dns-server.json",
+    "UpdateVNICDNS1TemplateFileURI": "https://raw.githubusercontent.com/AshishSharma303/PersonalRepository/master/Tetrapak/nic.json",
+    "vnetAddressRange": "10.0.0.0/16"
+  },
+  "resources": [
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIpRefAD')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('adservername')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIpRefSQLSSIS')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('sqlssisservername')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIpRefSQLSSAS')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('sqlssasservername')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountNameAD')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "Standard_LRS"
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountNameSQL')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "Premium_LRS"
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountNameDataload')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "Standard_LRS"
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "availabilityset",
+      "location": "[resourceGroup().location]"
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('VnetName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnetAddressRange')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetAddressRange')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "name": "[variables('ADLoadBalancerName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses',variables('publiciprefad'))]"
+      ],
+      "tags": {
+        "displayName": "ADpublicLoadBalancer"
+      },
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LBFE",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publiciprefad'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "LBBAP"
+          }
+        ],
+        "inboundNatRules": [
+          {
+            "name": "rdp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('ADLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 3389,
+              "backendPort": 3389,
+              "enableFloatingIP": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "dc-nic",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('VnetName'))]",
+        "[concat('Microsoft.Network/loadBalancers/', variables('ADLoadBalancerName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('dnsServerPrivateIp')]",
+              "subnet": {
+                "id": "[variables('subnet-id')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('ADLoadBalancerName')),'/backendAddressPools/LBBAP')]"
+                }
+              ],
+              "loadBalancerInboundNatRules": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('ADLoadBalancerName')),'/inboundNatRules/rdp')]"
+                }
+
+              ]
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[Parameters('ADServername')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountNamead'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces','dc-nic')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_D2"
+        },
+        "osProfile": {
+          "computerName": "[parameters('ADServerName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[parameters('imageSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountNameAD'),'.blob.core.windows.net/vhds/dc-vm-os-disk.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "dc-vm-data-disk",
+              "vhd": {
+                "Uri": "[concat('http://',parameters('storageAccountNameAD'),'.blob.core.windows.net/vhds/dc-vm-data-disk.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": "127",
+              "lun": 0
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','dc-nic')]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('adservername'),'/createadforest')]",
+          "apiVersion": "[variables('apiVersion')]",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('adservername'))]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.Powershell",
+            "type": "DSC",
+            "typeHandlerVersion": "2.17",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "ModulesUrl": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/active-directory-new-domain/CreateADPDC.ps1.zip",
+              "ConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC",
+              "Properties": {
+                "DomainName": "[parameters('adDomainName')]",
+                "AdminCreds": {
+                  "UserName": "[parameters('adminUsername')]",
+                  "Password": "PrivateSettingsRef:AdminPassword"
+                }
+              }
+            },
+            "protectedSettings": {
+              "Items": {
+                "AdminPassword": "[parameters('adminPassword')]"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "updatevnetdns",
+
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('adservername'), '/extensions/createadforest')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('UpdateVNETTemplateFileURI')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "virtualNetworkName": {
+            "value": "[parameters('VnetName')]"
+          },
+          "virtualNetworkAddressRange": {
+            "value": "[variables('vnetAddressRange')]"
+          },
+          "subnetName": {
+            "value": "[variables('subnetName')]"
+          },
+          "subnetRange": {
+            "value": "[variables('subnetAddressRange')]"
+          },
+          "DNSServerAddress": {
+            "value": [
+              "[variables('dnsServerPrivateIp')]"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "name": "[variables('SQLSSISLoadBalancerName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[resourcegroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpRefSQLSSIS'))]"
+      ],
+      "tags": {
+        "displayName": "SQLSSISloadBalancer"
+      },
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LBFE",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpRefSQLSSIS'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "LBBAP"
+          }
+        ],
+        "inboundNatRules": [
+          {
+            "name": "rdp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSISLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 3389,
+              "backendPort": 3389,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "sqltcp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSISLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 1433,
+              "backendPort": 1433,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "sqludp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSISLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 1434,
+              "backendPort": 1434,
+              "enableFloatingIP": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SQLSSIS_NIC",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "[variables('apiVersion')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('VnetName'))]",
+        "[concat('Microsoft.Network/loadBalancers/', variables('SQLSSISLoadBalancerName'))]"
+      ],
+      "tags": {
+        "displayName": "VirtualMachineNicSQLIS"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "SQLSSIS_NIC",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('SSISServerPrivateIp')]",
+              "subnet": {
+                "id": "[variables('subnet-id')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSISLoadBalancerName')),'/backendAddressPools/LBBAP')]"
+                }
+              ],
+              "loadBalancerInboundNatRules": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSISLoadBalancerName')),'/inboundNatRules/rdp')]"
+                },
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSISLoadBalancerName')),'/inboundNatRules/sqltcp')]"
+                },
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSISLoadBalancerName')),'/inboundNatRules/sqludp')]"
+                }
+              ]
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": [
+            "[variables('dnsServerPrivateIp')]"
+          ]
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('SQLSSISServerName')]",
+      "location": "[resourcegroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountNameSQL'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', 'SQLSSIS_NIC')]"
+      ],
+      "tags": {
+        "displayName": "SQLSSISServerName"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_DS13"
+        },
+        "osProfile": {
+          "computername": "[parameters('SQLSSISServerName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminpassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('sqlImagePublisher')]",
+            "offer": "[variables('sqlImageOffer')]",
+            "sku": "[variables('sqlImageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "VirtualMachineOSDisk",
+            "vhd": {
+              "uri": "[concat('http://', parameters('storageAccountNameSQL'), '.blob.core.windows.net/vhds', '/', parameters('SQLSSISServerName'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountNameSQL'),'.blob.core.windows.net/vhds','/', parameters('SQLSSISServerName'), 'data.vhd')]"
+              },
+              "name": "[concat(parameters('SQLSSISServerName'),'-data-disk1')]",
+              "createOption": "empty",
+              "caching": "None",
+              "diskSizeGB": 100,
+              "lun": 0
+            },
+            {
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountNameSQL'),'.blob.core.windows.net/vhds','/', parameters('SQLSSISServerName'), 'data2.vhd')]"
+              },
+              "name": "[concat(parameters('SQLSSISServerName'),'-data-disk2')]",
+              "createOption": "empty",
+              "caching": "None",
+              "diskSizeGB": 100,
+              "lun": 1
+            },
+            {
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountNameSQL'),'.blob.core.windows.net/vhds','/', parameters('SQLSSISServerName'), 'data3.vhd')]"
+              },
+              "name": "[concat(parameters('SQLSSISServerName'),'-data-disk3')]",
+              "createOption": "empty",
+              "caching": "None",
+              "diskSizeGB": 100,
+              "lun": 2
+            }
+
+          ]
+
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'SQLSSIS_NIC')]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "apiVersion": "[variables('apiVersion')]",
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('SQLSSISServerName'),'/joindomain')]",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('SQLSSISServerName'))]",
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('ADServername'),'/extensions/createadforest')]"
+            
+          ],
+          "properties": {
+            "publisher": "Microsoft.Compute",
+            "type": "JsonADDomainExtension",
+            "typeHandlerVersion": "1.3",
+            "settings": {
+              "Name": "[parameters('adDomainname')]",
+              "OUPath": "[parameters('ouPath')]",
+              "User": "[parameters('admindomainjoin')]",
+              "Restart": "true",
+              "Options": "[parameters('domainJoinOptions')]"
+            },
+            "protectedsettings": {
+              "Password": "[parameters('adminpassword')]"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "name": "[variables('SQLSSASLoadBalancerName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[resourcegroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpRefSQLSSAS'))]"
+      ],
+      "tags": {
+        "displayName": "SQLSSASloadBalancer"
+      },
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LBFE",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpRefSQLSSAS'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "LBBAP"
+          }
+        ],
+        "inboundNatRules": [
+          {
+            "name": "rdp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 3389,
+              "backendPort": 3389,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "sqltcp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 1433,
+              "backendPort": 1433,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "sqludp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 1434,
+              "backendPort": 1434,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "sqlSSASDefault",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 2382,
+              "backendPort": 2382,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "sqlSSASNamed",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/frontendIPConfigurations/LBFE')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 2383,
+              "backendPort": 2383,
+              "enableFloatingIP": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SQLSSAS_NIC",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "[variables('apiVersion')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('VnetName'))]",
+        "[concat('Microsoft.Network/loadBalancers/', variables('SQLSSASLoadBalancerName'))]"
+      ],
+      "tags": {
+        "displayName": "VirtualMachineNicSQLAS"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "SQLSSAS_NIC",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('SSASServerPrivateIp')]",
+              "subnet": {
+                "id": "[variables('subnet-id')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/backendAddressPools/LBBAP')]"
+                }
+              ],
+              "loadBalancerInboundNatRules": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/inboundNatRules/rdp')]"
+                },
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/inboundNatRules/sqltcp')]"
+                },
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/inboundNatRules/sqludp')]"
+                },
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/inboundNatRules/sqlSSASDefault')]"
+                },
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('SQLSSASLoadBalancerName')),'/inboundNatRules/sqlSSASNamed')]"
+                }
+              ]
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": [
+            "[variables('dnsServerPrivateIp')]"
+          ]
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('SQLSSASServerName')]",
+      "location": "[resourcegroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountNameSQL'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', 'SQLSSAS_NIC')]"
+      ],
+      "tags": {
+        "displayName": "SQLSSASServerName"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_DS13"
+        },
+        "osProfile": {
+          "computername": "[parameters('SQLSSASServerName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminpassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('sqlImagePublisher')]",
+            "offer": "[variables('sqlImageOffer')]",
+            "sku": "[variables('sqlImageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "VirtualMachineOSDisk",
+            "vhd": {
+              "uri": "[concat('http://', parameters('storageAccountNameSQL'), '.blob.core.windows.net/vhds', '/', parameters('SQLSSASServerName'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountNameSQL'),'.blob.core.windows.net/vhds','/', parameters('SQLSSASServerName'), 'data.vhd')]"
+              },
+              "name": "[concat(parameters('SQLSSASServerName'),'-data-disk1')]",
+              "createOption": "empty",
+              "caching": "None",
+              "diskSizeGB": 100,
+              "lun": 0
+            },
+            {
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountNameSQL'),'.blob.core.windows.net/vhds','/', parameters('SQLSSASServerName'), 'data2.vhd')]"
+              },
+              "name": "[concat(parameters('SQLSSASServerName'),'-data-disk2')]",
+              "createOption": "empty",
+              "caching": "None",
+              "diskSizeGB": 100,
+              "lun": 1
+            },
+            {
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountNameSQL'),'.blob.core.windows.net/vhds','/', parameters('SQLSSASServerName'), 'data3.vhd')]"
+              },
+              "name": "[concat(parameters('SQLSSASServerName'),'-data-disk3')]",
+              "createOption": "empty",
+              "caching": "None",
+              "diskSizeGB": 100,
+              "lun": 2
+            }
+
+          ]
+
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'SQLSSAS_NIC')]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "name": "[concat(parameters('SQLSSASServerName'),'/DomainJoin')]",
+          "apiVersion": "[variables('apiVersion')]",
+          "location": "[ResourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('SQLSSASServerName'))]",
+            "[concat('Microsoft.Compute/virtualMachines/', parameters('ADServername'),'/extensions/createadforest')]"
+            
+          ],
+          "properties": {
+            "publisher": "Microsoft.Compute",
+            "type": "JsonADDomainExtension",
+            "typeHandlerVersion": "1.3",
+            "settings": {
+              "Name": "[parameters('adDomainName')]",
+              "OUPath": "[parameters('ouPath')]",
+              "user": "[parameters('admindomainjoin')]",
+              "Restart": "true",
+              "Options": "[parameters('domainJoinOptions')]"
+            },
+
+            "protectedSettings": {
+              "Items": {
+                "adminPassword": "[parameters('adminpassword')]"
+              }
+            }
+          }
+        }
+
+      ]
+    },
+    {
+      "name": "[parameters('SQLDBServerName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[ResourceGroup().Location]",
+      "apiVersion": "2014-04-01-preview",
+      "properties": {
+        "administratorLogin": "[parameters('TpDbSqluUsername')]",
+        "administratorLoginPassword": "[parameters('sqluserPassword')]",
+        "version": "12.0"
+      },
+
+      "resources": [
+        {
+          "name": "[parameters('SQLdatabaseName')]",
+          "type": "databases",
+          "location": "[resourcegroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('SQLDBServerName'))]"
+          ],
+          "properties": {
+            "edition": "[parameters('edition')]",
+            "collation": "[parameters('collation')]",
+            "maxSizeBytes": "[parameters('DWHmaxSizeBytes')]",
+            "requestedServiceObjectiveName": "[parameters('DWHrequestedServiceObjectiveName')]"
+          }
+        },
+        {
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('SQLDBServerName'))]"
+          ],
+          "location": "[ResourceGroup().location]",
+          "name": "AllowAllWindowsAzureIps",
+          "properties": {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          },
+          "type": "firewallrules"
+        }
+      ]
+    },
+
+    {
+      "name": "[parameters('DWHDBServerName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[ResourceGroup().Location]",
+      "apiVersion": "2014-04-01-preview",
+      "properties": {
+        "administratorLogin": "[parameters('TpDbSqluUsername')]",
+        "administratorLoginPassword": "[parameters('sqluserPassword')]",
+        "version": "12.0"
+      },
+
+      "resources": [
+        {
+          "name": "[parameters('DWHdatabaseName')]",
+          "type": "databases",
+          "location": "[resourcegroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('DWHDBServerName'))]"
+          ],
+          "properties": {
+            "edition": "[parameters('DWHedition')]",
+            "collation": "[parameters('DWHcollation')]",
+            "maxSizeBytes": "[parameters('DWHmaxSizeBytes')]",
+            "requestedServiceObjectiveName": "[parameters('DWHrequestedServiceObjectiveName')]"
+          }
+        },
+        {
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('DWHDBServerName'))]"
+          ],
+          "location": "[ResourceGroup().location]",
+          "name": "AllowAllWindowsAzureIps",
+          "properties": {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          },
+          "type": "firewallrules"
+        }
+      ]
+    }
+
+  ]
+}
