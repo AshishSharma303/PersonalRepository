@@ -1,0 +1,53 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "numberOfDisks": {
+      "type": "string",
+      "defaultValue": 2,
+      "allowedValues": [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16" ],
+      "metadata": {
+        "description": "This parameter allows the users to select the number of disks they want"
+      }
+    },
+    "servername": { "type": "string" },
+    "storageaccount": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the storage account where the data disks are stored"
+      }
+    },
+    "disks": {
+      "type": "array",
+      "metadata": {
+        "description": "disk information in the form of array of objects"
+      }
+    },
+    "location": {"type": "string"}
+
+  },
+  "variables": {},
+  "resources": [
+    {
+      "comments": "Generalized from resource: '/subscriptions/subID/resourceGroups/RG/providers/Microsoft.Compute/disks/manageddiskresource'.",
+      "type": "Microsoft.Compute/disks",
+      "name": "[concat(parameters('servername'),'-datadisk-',copyIndex(1))]",
+      "apiVersion": "2016-04-30-preview",
+      "location": "eastus2",
+      "copy": {
+        "name": "virtualMachineLoop",
+        "count": "[parameters('numberOfDisks')]"
+      },
+      "scale": null,
+      "properties": {
+        "accountType": "Standard_LRS",
+        "creationData": {
+          "createOption": "Empty"
+        },
+        "diskSizeGB": 1023
+      },
+      "dependsOn": [ ]
+    }
+  ],
+  "outputs": {}
+}
