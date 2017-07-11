@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "vpnType": {
-      "type": "array",
+      "type": "string",
       "metadata": {
         "description": "Route based (Dynamic Gateway) or Policy based (Static Gateway)"
       },
