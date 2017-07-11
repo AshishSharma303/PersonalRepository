@@ -1,0 +1,18 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "addressPrefix": { "value": "10.0.0.0/16" },
+    "subnet1Prefixvalue": { "value": "10.0.10.0/24" },
+    "subnet2Prefixvalue": { "value": "10.0.20.0/24" },
+    "subnet3Prefixvalue": { "value": "10.0.30.0/24" },
+    "gatewaySubnetPrefix": { "value": "10.0.40.0/24" },
+    "businessUnit": { "value": "BU" },
+    "owner": { "value": "owner" },
+    "costCenter": { "value": "CC" },
+    "localGatewayName": { "value": "onPremGateway" },
+    "localGatewayIpAddress": { "value": "124.123.157.36" },
+    "localAddressPrefix": { "value": "192.168.0.0/24" },
+    "sharedKey": { "value": "Password@12345" }
+  }
+}
